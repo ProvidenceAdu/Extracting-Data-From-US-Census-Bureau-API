@@ -1,0 +1,68 @@
+
+```{r}
+options(scipen=999)
+library(haven)
+library(dplyr)
+library(tidycensus)
+library(janitor)
+library(purrr)
+```
+
+
+
+```{r}
+census_api_key("e0577a26a616f4dda60446eae987e3b6d0d944a3")
+```
+
+
+```{r}
+
+Search <- load_variables(year = 2021, dataset = "acs5", cache = TRUE)
+View(Search)
+```
+
+
+```{r}
+Data <- get_acs(geography = "block group", year = 2021,
+                      variables = c(
+####### Sex by Age Under ######                       
+'B01001_003', 'B01001_004', 'B01001_005', 'B01001_006', 'B01001_027', 'B01001_028', 'B01001_029', 'B01001_030', 'B01001_001',
+####### Sex by Age Over  #####
+'B01001_020', 'B01001_021', 'B01001_022', 'B01001_023', 'B01001_024', 'B01001_025', 'B01001_044', 'B01001_045', 'B01001_046', 'B01001_047', 'B01001_048', 'B01001_049',
+####### Median Age ######
+'B01002_001',
+####### Hispanic or Latino Origin by Race #######
+'B03002_006', 'B03002_004', 'B03002_003', 'B03002_012', 'B03002_005', 'B03002_007', 'B03002_008', 'B03002_009', 'B03002_010', 'B03002_011', 'B03002_001',
+####### Means of Transportation to Work ######
+'B08134_021', 'B08134_001', 'B08134_015', 'B08134_016', 'B08134_017', 'B08134_018', 'B08134_019', 'B08134_020', 
+####### Sex by Enrollment by Level of Education ###### 
+'B14002_009', 'B14002_012', 'B14002_015', 'B14002_018', 'B14002_033', 'B14002_036', 'B14002_039', 'B14002_042', 'B14002_007', 'B14002_010', 'B14002_013', 'B14002_016', 'B14002_031', 'B14002_034', 'B14002_037', 'B14002_040',
+####### Educational Attainment #######
+'B15003_002', 'B15003_017', 'B15003_018', 'B15003_019', 'B15003_020', 'B15003_021', 'B15003_022', 'B15003_023', 'B15003_024', 'B15003_025', 'B15003_001', 
+########  Median Household Income ######
+'B19013_001',
+########  Sex By Age By Veteran Status For Civilian Population #####
+'B21001_002', 'B21001_001', 
+######## Employment Status ########
+'B23025_004', 'B23025_002', 
+#######  Occupancy Status #####
+'B25002_003', 'B25002_001', 'B25002_002', 'B25044_010', 'B25044_003', 'B25044_001',
+####### Gross Rent #####
+'B25063_001', 'B25003_002', 'B25003_001',
+####### Internet Access ##### 
+'B28011_004', 'B28011_001'), 
+state = "NC",
+county = 119 ,
+survey = "acs5", 
+geometry = FALSE, 
+output = "wide")
+
+View(Data)
+```
+
+```{r}
+write.csv(Data,'CensusData.csv', row.names = FALSE) 
+```
+
+
+

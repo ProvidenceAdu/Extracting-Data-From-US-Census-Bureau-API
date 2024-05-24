@@ -1,0 +1,365 @@
+
+```{r}
+options(scipen=999)
+library(haven)
+library(dplyr)
+library(tidycensus)
+library(janitor)
+library(purrr)
+
+purrr::rate_sleep(1, quiet = TRUE)
+
+```
+
+
+```{r}
+census_api_key("0b6563c7c605d9e189e8a18ad76b7da0a4d057a2", install = TRUE,overwrite=TRUE)
+readRenviron("~/.Renviron")
+
+NPA = read.csv('/Users/kathrynarnold/Desktop/Disertation Work/Data/Meck_BG_2020_NPA_Crosswalk_final.csv')
+
+CharlotteQOL= read.csv('/Users/kathrynarnold/Desktop/Disertation Work/Data/qol-data (2)/Charlotte QOL.csv')
+```
+
+### Quality of Life Explorer 
+
+##### Import Libraries
+
+#### Downloading ACS data 
+- We use the census library to download ACS variables for the census API. 
+- We are able to access the census API because we passed our unique API key in the step above
+- To access the data with census library, we have to specify the dataset of interest(acs5) and call the 'get' function
+- The get function needs few key parameters including : NAME, ACS variable ID, geography of interest, and year of interest
+
+    - Name: The name parameter reports the census block name
+    
+    - ACS Variable: The variable has to be specific, Estimates has E at the end, Margion of Error has M 
+    
+    - Geography: The geography uses a python dictionary.i.e key value pairs. we are interested in all blockgroup in Mecklenburg county. To get those we have to specify the geography using (for:name of geography and asteriks since we want all blockgroups), then for the county we have to specify the State ID (NC ID is 37) and the County ID (Meck County ID is 119), then the year (2019)
+    
+- The output after running the get function is a dictionary, so we wrap it in pandas DataFrame for further analysis
+
+### Rename columns with proper names
+
+- Once we get our Data, use use the rename function in pandas to modify the column names for all the variables. 
+```{r}
+
+Search <- load_variables(year = 2019, dataset = "acs5", cache = TRUE)
+View(Search)
+```
+
+
+```{r}
+Data <- get_acs(geography = "tract", year = 2019,
+                      variables = c(
+
+####### Means of Transportation to Work ######
+'B08134_021', 'B08134_001', 'B08134_031','B08134_041','B08134_051','B08134_061' ,'B08134_071', 'B08134_081','B08134_091','B08134_101','B08134_111',
+
+####### Educational Attainment #######
+'B15003_001','B15003_002','B15003_003','B15003_004','B15003_005','B15003_006','B15003_007','B15003_008','B15003_009','B15003_010','B15003_011','B15003_012','B15003_013','B15003_014','B15003_015','B15003_016','B15003_017', 'B15003_018', 'B15003_019', 'B15003_020', 'B15003_021', 'B15003_022', 'B15003_023', 'B15003_024', 'B15003_025', 'B15003_001', 
+
+######## Employment Status ########
+'B23025_004', 'B23025_007','B23025_001',
+
+#######  Occupancy Status #####
+'B25002_003', 'B25002_001', 'B25002_002', 
+
+####Tenure & Available Vechicles####(renter/owner available by race)
+'B25044_010', 'B25044_003', 'B25044_001','B25044_002','B25044_004','B25044_005', 'B25044_006','B25044_007','B25044_008','B25044_009','B25044_011','B25044_012', 'B25044_013', ' B25044_014','B25044_015','B25003_002', 'B25003_001','B25003_003',
+
+### Monthly Housing Costs
+'B25104_002', 'B25104_003', 'B25104_004','B25104_005', 'B25104_006' , 'B25104_007 ',' B25104_008', 'B25104_009','B25104_010','B25104_011', 'B25104_012', 'B25104_013','B25104_014', 'B25104_015', 'B25104_016','B25104_017','B25104_001',
+
+#### Race#####
+'B02001_002', 'B02001_003', 'B02001_004', 'B02001_005', 'B02001_006', 'B02001_007', 'B02001_008', 'B02001_009','B02001_010','B02001_001',
+
+#### Male Minor #######
+'B01001_003', 'B01001_004', 'B01001_005','B01001_006',
+
+###Male Adult########
+'B01001_007','B01001_008','B01001_009','B01001_010','B01001_011','B01001_012','B01001_013','B01001_014','B01001_015','B01001_016','B01001_017','B01001_018','B01001_019','B01001_020','B01001_021','B01001_022','B01001_023','B01001_024','B01001_025',
+
+### Female minor########
+'B01001_027','SB01001_028','B01001_029','B01001_030',
+
+#Female Adult#######
+'B01001_031','B01001_032','B01001_033','B01001_034','B01001_035','B01001_036','B01001_037','B01001_038','B01001_039','B01001_040','B01001_041','B01001_042','B01001_043','B01001_044','B01001_045','B01001_046','B01001_047E','B01001_048','B01001_049',
+
+###Occupation Types ####
+'B08124_001','B08124_002','B08124_003','B08124_004','B08124_005','B08124_006', 'B08124_001',
+
+###### Incremental Income ####
+'B19001A_001','B19001A_002','B19001A_003', 'B19001A_004', 'B19001A_005','B19001A_006' , 'B19001A_007', 'B19001A_008','B19001A_009','B19001A_010','B19001A_011','B19001A_012', 'B19001A_013','B19001A_014','B19001A_015','B19001A_016','B19001A_017',
+
+##Government Assistance / Food Stamps##
+'B22003_001','B22003_002','B22003_003','B22003_004', 'B22003_005', 'B22003_006', 'B22003_007','B19057_001','B19057_002','B19057_003',
+
+### English Profiecency ###
+'B06007_001','B06007_002','B06007_003', 'B06007_006',
+
+###Units in Structure####
+'B25024_001','B25024_002','B25024_003','B25024_004','B25024_005','B25024_006','B25024_007', 'B25024_008', 'B25024_009', 'B25024_010','B25024_011',
+
+## Household Type & Marital Status ##
+'B11001_001','B11001_002','B11001_003','B11001_004', 'B11001_005', 'B11001_006','B11001_001', 'B11001_007', 'B11001_008', 'B11001_009', 'B19125_001', 'B19125_002', 'B19125_003',
+
+##MultiGenerational##
+'B11017_001','B11017_002', 'B11017_003',
+
+'B09021'),
+
+state = "NC",
+county = 119 ,
+survey = "acs5", 
+geometry = FALSE, 
+output = "wide")
+
+head(Data)
+```
+
+#### Convert variables to integer & Rename
+
+- The output of our data from the API is pandas object(string), so we cannot perform mathematical operations on them. Hence we convert the numerical variables to integer 
+
+
+
+
+```{r}
+#Check if all GEOIDs are present
+
+
+```
+#### Replace Null Values with NA
+
+- Data from the census API which are NaN values shows either as -666666666.0, -222222222.0, or -333333333.0, we search and replace all of them with actual NaNs values using numpy
+
+#### Join BlockGroup Data to NPA data #Check if all GEOIDs are present
+
+- After calculating the derived margins of error, we join the output to NPA data using GEOID
+
+- To create GEOID from the ACS Data, we combine the state ID, the County ID, the Census Tract ID and the Block Group ID, and use astype to makesure the data type is an integer since the NPA GEOID2 is an integer data type
+
+##### Join Data using the common field GEOID
+
+```{python}
+NPAData = pd.merge(NPA,Data, how = "left", left_on = ['GEOID2'], right_on= ['GEOID'])
+```
+
+### Multiply derived proportion by 100 to get percentages
+
+```{python}
+for row in Data: 
+    if row.startswith('Per'):
+        Data[str(row)] = Data[str(row)]*100
+```
+
+```{r}
+write.csv(Data,'CensusData.csv', row.names = FALSE) 
+```
+
+Race$White <- (Race$B02001_002E)
+
+Race$Non_white <- (Race$B02001_003E + Race$B02001_004E + Race$B02001_005E + Race$B02001_006E + Race$B02001_007E + Race$B02001_008E + Race$B02001_009E +	Race$B02001_010E)
+
+Sex_Age$Male_Minor <- (Sex_Age$B01001_003E + Sex_Age$B01001_004E + Sex_Age$B01001_005E +Sex_Age$B01001_006E)
+Sex_Age$Male_Adult <- (Sex_Age$B01001_007E + Sex_Age$B01001_008E + Sex_Age$B01001_009E + Sex_Age$B01001_010E + Sex_Age$B01001_011E + Sex_Age$B01001_012E + Sex_Age$B01001_013E + Sex_Age$B01001_014E + Sex_Age$B01001_015E + Sex_Age$B01001_016E + Sex_Age$B01001_017E + Sex_Age$B01001_018E + Sex_Age$B01001_019E + Sex_Age$B01001_020E + Sex_Age$B01001_021E + Sex_Age$B01001_022E + Sex_Age$B01001_023E + Sex_Age$B01001_024E + Sex_Age$B01001_025E)
+  
+Sex_Age$Female_Minor <- (Sex_Age$B01001_027E + Sex_Age$B01001_028E + Sex_Age$B01001_029E + Sex_Age$B01001_030E)
+Sex_Age$Female_Adult <- (Sex_Age$B01001_031E + Sex_Age$B01001_032E + Sex_Age$B01001_033E + Sex_Age$B01001_034E + Sex_Age$B01001_035E + Sex_Age$B01001_036E + Sex_Age$B01001_037E + Sex_Age$B01001_038E + Sex_Age$B01001_039E + Sex_Age$B01001_040E + Sex_Age$B01001_041E + Sex_Age$B01001_042E + Sex_Age$B01001_043E + Sex_Age$B01001_044E+ Sex_Age$B01001_045E + Sex_Age$B01001_046E + Sex_Age$B01001_047E + Sex_Age$B01001_048E + Sex_Age$B01001_049E)
+  
+Education$hs_or_less <-(Education$B28006_002E)
+  
+Education$Somecollege <- (Education$B28006_008E)
+  
+Education$bachelors_or_beyond <- (Education$B28006_014E)
+
+Housing$Total <- (Housing$H1_001N) 
+
+Housing$Vacant <- (Housing$H1_003N)
+
+Housing$Occupied <- (Housing$H1_002N)
+
+Income$under25 <- (Income$B19001_002E	+ Income$B19001_003E + Income$B19001_004E	+ Income$B19001_005E)
+  
+Income$under50 <- (Income$B19001_006E + Income$B19001_007E + Income$B19001_008E	+ Income$B19001_009E + Income$B19001_010E)
+
+Income$under100 <- (Income$B19001_011E + Income$B19001_012E + Income$B19001_013E)
+  
+Income$Over100 <- (Income$B19001_014E + Income$B19001_015E + Income$B19001_016E) 
+
+Income$Over200 <- (Income$B19001_017E)
+```
+#Merge Datasets 
+```{r}
+
+#put all data frames into list
+Charlotte <- list(Education, Housing, Income, Race, Sex_Age)
+
+#merge all data frames in list
+Charlotte <- Charlotte %>% reduce(inner_join, by=c("GEO_ID", "NAME"))
+
+# Find Unique Column Names
+Charlotte_unique <- unique(colnames(Charlotte))
+
+# Keep Only Unique Column Names
+Charlotte[Charlotte_unique]
+
+
+```
+## Scrub / Organize Data 
+```{r}
+## keep only th variables needed
+Charlotte_final= Charlotte[c("GEO_ID", "NAME", "White", "Non_white", "Male_Adult", "Male_Minor", "Female_Adult", "Female_Minor", "hs_or_less", "Somecollege", "bachelors_or_beyond", "Total", "Vacant", "Occupied", "under100", "under50", "under25", "Over200", "Over100")]
+
+## extract GEOID information and convert unit type
+
+Charlotte_final$GEOID <- substr(Charlotte_final$GEO_ID, 10, 20)
+
+Charlotte_final$GEOID <- as.character(Charlotte_final$GEOID)
+
+Charlottesf <- merge(tracts, Charlotte_final, by= "GEOID")
+```
+
+
+#Geospatial; Project - What are the neighborhood demographics of households within 1/2 a mile of a blue line station
+```{r}
+## Rail Stations
+
+#Create Buffer Zones 
+Rail.Stations_buffer <- st_buffer(Rail.Stations, dist = 804.67)
+
+## check the coordinate systems in both datasets
+st_crs(Rail.Stations_buffer)==st_crs(Charlottesf)
+
+Charlottesf<- st_transform(Charlottesf, st_crs(Rail.Stations_buffer))
+
+## spatial join the two layers
+Rail.Stations.Join <- st_join(Charlottesf, Rail.Stations_buffer, join= st_intersects)
+
+Rail.Stations.agg <- Rail.Stations.Join %>% group_by(NAME) %>% summarize(whitesum = sum(White), nonwhite_sum = sum(Non_white), maleadult_sum = sum(Male_Adult), maleminorsum = sum(Male_Minor), femaleadult_sum = sum(Female_Adult), femaleminor_sum = sum(Female_Minor), hssum = sum(hs_or_less) , somecollegesum = sum(Somecollege), bachelors_sum = sum(bachelors_or_beyond), totalhousing = sum(Total), vacanthousing = sum(Vacant), under100_sum = sum(under100), under50_sum = sum(under50) , under25_sum = sum(under25), Over100_sum = sum(Over100), Over200 = sum(Over200))
+                                                                         
+
+buffer.final <- merge(Rail.Stations_buffer, as_data_frame(Rail.Stations.agg) %>% select(!geometry), by= "NAME")
+
+plot(buffer.final)
+```
+
+```{r}
+#Map Race, Age, Gender 
+
+ Whitemap <- tm_shape(buffer.final) + tm_borders()+ tm_fill("whitesum", style = "pretty",
+title = "White Population",title.position = c('right', 'top'))+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+Nonwhitemap <- tm_shape(buffer.final) + tm_borders()+ tm_fill("nonwhite_sum", style = "pretty",
+title = "Non - White Population")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = 0.25) +  tm_compass(position = c("left", "top"), size = 1)
+
+AdultMale <- tm_shape(buffer.final) + tm_borders()+ tm_fill("maleadult_sum", style = "pretty",
+title = "Adult Male Population")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+MinorMale <- tm_shape(buffer.final) + tm_borders()+ tm_fill("maleminorsum", style = "pretty",
+title = "Minor Male Population")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .5) + tm_compass(position = c("left", "top"), size = .5)
+
+AdultFemale <- tm_shape(buffer.final) + tm_borders()+ tm_fill("femaleadult_sum", style = "pretty",
+title = "Adult Female Population")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE)+ tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+MinorFemale <- tm_shape(buffer.final) + tm_borders()+ tm_fill("femaleminor_sum", style = "pretty",
+title = " Minor Female Population")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .5) + tm_compass(position = c("left", "top"), size = .5)
+
+tmap_arrange(Whitemap, Nonwhitemap)
+
+tmap_arrange(AdultMale, AdultFemale)
+
+tmap_arrange(MinorMale, MinorFemale)
+```
+
+```{r}
+#map Education
+HSMap <- tm_shape(buffer.final) + tm_borders()+ tm_fill("hssum", style = "pretty", title = "Highschool or Less") + tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) +tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+Somemap <- tm_shape(buffer.final) + tm_borders()+ tm_fill("somecollegesum", style = "pretty", title = "Some College")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) +  tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1) 
+
+Bachmap <- tm_shape(buffer.final) + tm_borders()+ tm_fill("bachelors_sum", style = "pretty", title = "Bachleors or Higher ")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+tmap_arrange(HSMap, Somemap, Bachmap)
+```
+
+```{r}
+#map Housing 
+Totalhousing <- tm_shape(buffer.final) + tm_borders()+ tm_fill("totalhousing", style = "pretty",
+title = "Total Housing Units")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+Vacanthousing <- tm_shape(buffer.final) + tm_borders()+ tm_fill("vacanthousing", style = "pretty",
+title = "Vacant Housing")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+tmap_arrange(Totalhousing, Vacanthousing)
+```
+
+```{r}
+# map Income
+Under100 <- tm_shape(buffer.final) + tm_borders()+ tm_fill("under100_sum", style = "pretty",
+title = "Income Under 100K")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+Under50 <- tm_shape(buffer.final) + tm_borders()+ tm_fill("under50_sum", style = "pretty",
+title = "Income Under 50K")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+Under25 <- tm_shape(buffer.final) + tm_borders()+ tm_fill("under25_sum", style = "pretty",
+title = "Income Under 25K")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+Over100 <- tm_shape(buffer.final) + tm_borders()+ tm_fill("Over100_sum", style = "pretty",
+title = "Income Over 100K")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE)+ tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+over200 <- tm_shape(buffer.final) + tm_borders()+ tm_fill("Over200", style = "pretty",
+title = "Income Over 200K")+ tm_shape(Charlottesf) + tm_borders() + tm_layout(legend.outside = TRUE) + tm_scale_bar(position = c("right", "bottom"), width = .25) + tm_compass(position = c("left", "top"), size = 1)
+
+
+tmap_arrange(Under25, Under50, Under100)
+
+tmap_arrange(Over100, over200)
+
+```
+
+#Linear Regression Project
+```{r}
+#h1 - There is no relationship between demographics and 1/2 proximity to a blue line station 
+#h2 - There is a realtionship between demographics and 1/2 proximity to a blue line station 
+
+
+#add column if census tract has station or not
+
+Rail.Stations.Join$ContainsStation <- ifelse((Rail.Stations.Join$StationTyp == "Blue Line Station" | Rail.Stations.Join$StationTyp ==  "Blue Line Extension Station"),1, 0) 
+
+Rail.Stations.Join$ContainsStation <- Rail.Stations.Join$ContainsStation %>% replace(is.na(.), 0)
+
+#Create Proportions for Demographics 
+
+Rail.Stations.Join$Race <- (Rail.Stations.Join$White / (Rail.Stations.Join$White + Rail.Stations.Join$Non_white))
+
+Rail.Stations.Join$Age <- ((Rail.Stations.Join$Male_Adult + Rail.Stations.Join$Female_Adult) / (Rail.Stations.Join$Male_Adult + Rail.Stations.Join$Female_Adult + Rail.Stations.Join$Male_Minor + Rail.Stations.Join$Female_Minor ))
+
+Rail.Stations.Join$Gender <- ((Rail.Stations.Join$Male_Adult + Rail.Stations.Join$Male_Minor) / (Rail.Stations.Join$Male_Adult + Rail.Stations.Join$Female_Adult + Rail.Stations.Join$Male_Minor + Rail.Stations.Join$Female_Minor ))
+
+
+Rail.Stations.Join$mideducation <- Rail.Stations.Join$Somecollege / (Rail.Stations.Join$hs_or_less + Rail.Stations.Join$Somecollege + Rail.Stations.Join$bachelors_or_beyond)
+
+Rail.Stations.Join$higheducation <- Rail.Stations.Join$bachelors_or_beyond / (Rail.Stations.Join$hs_or_less + Rail.Stations.Join$Somecollege + Rail.Stations.Join$bachelors_or_beyond)
+
+Rail.Stations.Join$Housing <- (Rail.Stations.Join$Occupied / Rail.Stations.Join$Total)
+
+
+Rail.Stations.Join$middleincome <- (Rail.Stations.Join$under50 + Rail.Stations.Join$under100) / (Rail.Stations.Join$under25 + Rail.Stations.Join$under50 + Rail.Stations.Join$under100 + Rail.Stations.Join$Over200 + Rail.Stations.Join$Over100)
+
+Rail.Stations.Join$highincome <- (Rail.Stations.Join$Over100 + Rail.Stations.Join$Over200) / (Rail.Stations.Join$under25 + Rail.Stations.Join$under50 + Rail.Stations.Join$under100 + Rail.Stations.Join$Over200 + Rail.Stations.Join$Over100)
+
+Proximity <- glm(ContainsStation ~ Race + Age + Gender + mideducation + higheducation + middleincome + Housing + highincome, data = Rail.Stations.Join, family=binomial(link='logit'))
+
+
+summary(Proximity , render = "print")
+
+with(Proximity, null.deviance - deviance)
+
+with(Proximity, df.null - df.residual)
+
+with(Proximity, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
+```
+
